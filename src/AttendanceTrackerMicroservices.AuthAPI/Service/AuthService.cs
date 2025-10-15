@@ -11,12 +11,14 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service
         private readonly AppDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
-        public AuthService(AppDbContext db, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager)
+        public AuthService(AppDbContext db, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IJwtTokenGenerator jwtTokenGenerator)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
+            _jwtTokenGenerator = jwtTokenGenerator;
         }
 
         public async Task<string> Register(RegistrationRequestDTO registrationRequestDTO)
@@ -59,9 +61,35 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service
             return "Error Encountered";
         }
 
-        public Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
+        public async Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
         {
-            throw new NotImplementedException();
+            var user = _db.ApplicationUsers.FirstOrDefault(u => u.UserName.ToLower() == loginRequestDTO.UserName.ToLower());
+
+            bool isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
+
+            if (user == null || !isValid)
+            {
+                return new LoginResponseDTO() { User = null, Token = string.Empty };
+            }
+
+            // if user was found, generate JWT
+            var token = _jwtTokenGenerator.GenerateToken(user);
+
+            UserDTO userDTO = new()
+            {
+                ID = user.Id,
+                Email = user.Email,
+                Name = user.Name,
+                PhoneNumber = user.PhoneNumber
+            };
+
+            LoginResponseDTO loginResponseDTO = new LoginResponseDTO()
+            {
+                User = userDTO,
+                Token = token
+            };
+
+            return loginResponseDTO;
         }
     }
 }
