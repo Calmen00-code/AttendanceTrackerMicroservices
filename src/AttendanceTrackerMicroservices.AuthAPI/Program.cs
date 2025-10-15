@@ -1,5 +1,7 @@
 using AttendanceTrackerMicroservices.AuthAPI.Data;
 using AttendanceTrackerMicroservices.AuthAPI.Models;
+using AttendanceTrackerMicroservices.AuthAPI.Service;
+using AttendanceTrackerMicroservices.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,6 +15,7 @@ builder.Services.AddDbContext<AppDbContext>(option =>
 });
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("ApiSettings:JwtOptions"));
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();

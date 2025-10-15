@@ -4,7 +4,7 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service.IService
 {
     public interface IAuthService
     {
-        Task<UserDTO> Register(RegistrationRequestDTO registrationRequestDTO);
+        Task<string> Register(RegistrationRequestDTO registrationRequestDTO);
         Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO);
     }
 }

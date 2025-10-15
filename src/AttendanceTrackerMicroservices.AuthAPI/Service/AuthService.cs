@@ -19,9 +19,44 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service
             _roleManager = roleManager;
         }
 
-        public Task<UserDTO> Register(RegistrationRequestDTO registrationRequestDTO)
+        public async Task<string> Register(RegistrationRequestDTO registrationRequestDTO)
         {
-            throw new NotImplementedException();
+            ApplicationUser user = new()
+            {
+                UserName = registrationRequestDTO.Email,
+                Email = registrationRequestDTO.Email,
+                NormalizedEmail = registrationRequestDTO.Email.ToUpper(),
+                PhoneNumber = registrationRequestDTO.PhoneNumber,
+                Name = registrationRequestDTO.Name,
+            };
+
+            try
+            {
+                var result = await _userManager.CreateAsync(user, registrationRequestDTO.Password);
+                if (result.Succeeded)
+                {
+                    var userToReturn = _db.ApplicationUsers.First(u => u.UserName == registrationRequestDTO.Email);
+
+                    UserDTO userDTO = new()
+                    {
+                        Email = userToReturn.Email,
+                        ID = userToReturn.Id,
+                        Name = userToReturn.Name,
+                        PhoneNumber = userToReturn.PhoneNumber
+                    };
+
+                    return "";
+                }
+                else
+                {
+                    return result.Errors.FirstOrDefault().Description;
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return "Error Encountered";
         }
 
         public Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO)
