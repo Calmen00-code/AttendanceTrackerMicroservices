@@ -46,5 +46,21 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Controllers
             _response.Result = loginResponse;
             return Ok(_response);
         }
+
+        [HttpPost("AssignRole")]
+        public async Task<IActionResult> AssignRole([FromBody] RegistrationRequestDTO assignRoleRequestDTO)
+        {
+            bool assignRoleSuccessfully = await _authService.AssignRole(assignRoleRequestDTO.Email, assignRoleRequestDTO.Role);
+            if (!assignRoleSuccessfully)
+            {
+                _response.IsSuccess = false;
+                _response.Message = "Failed to assign role";
+                return BadRequest(_response);
+            }
+
+            _response.Result = assignRoleSuccessfully;
+            return Ok(_response);
+        }
+
     }
 }

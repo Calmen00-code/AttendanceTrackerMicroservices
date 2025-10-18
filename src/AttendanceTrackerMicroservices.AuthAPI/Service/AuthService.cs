@@ -3,6 +3,7 @@ using AttendanceTrackerMicroservices.AuthAPI.Models;
 using AttendanceTrackerMicroservices.AuthAPI.Models.DTO;
 using AttendanceTrackerMicroservices.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AttendanceTrackerMicroservices.AuthAPI.Service
 {
@@ -90,6 +91,23 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service
             };
 
             return loginResponseDTO;
+        }
+
+        public async Task<bool> AssignRole(string email, string roleName)
+        {
+            var user = _db.ApplicationUsers.FirstOrDefault(u => u.Email.ToLower() == email.ToLower());
+            if (user == null)
+            {
+                return false;
+            }
+
+            if (!_roleManager.RoleExistsAsync(roleName).GetAwaiter().GetResult())
+            {
+                _roleManager.CreateAsync(new IdentityRole(roleName)).GetAwaiter().GetResult();
+            }
+
+            await _userManager.AddToRoleAsync(user, roleName);
+            return true;
         }
     }
 }
