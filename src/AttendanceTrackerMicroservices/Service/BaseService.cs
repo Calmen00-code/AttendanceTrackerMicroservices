@@ -26,7 +26,7 @@ namespace AttendanceTrackerMicroservices.Service
                 // Creating client with the name `AttendanceTrackerAPI`
                 HttpClient client = _httpClientFactory.CreateClient("AttendanceTrackerAPI");
 
-                HttpRequestMessage message = new();
+                HttpRequestMessage message = new HttpRequestMessage();
 
                 // configuring the header
                 message.Headers.Add("Accept", "application/json");
