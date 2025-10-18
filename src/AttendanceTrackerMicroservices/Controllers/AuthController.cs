@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AttendanceTrackerMicroservices.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AttendanceTrackerMicroservices.Controllers
 {
@@ -9,9 +10,17 @@ namespace AttendanceTrackerMicroservices.Controllers
             return View();
         }
 
+        [HttpGet]
         public IActionResult Login()
         {
-            return View();
+            LoginRequestDTO loginRequestDTO = new LoginRequestDTO();
+            return View(loginRequestDTO);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginRequestDTO loginRequest)
+        {
+            return Ok();
         }
 
         public IActionResult Register()
