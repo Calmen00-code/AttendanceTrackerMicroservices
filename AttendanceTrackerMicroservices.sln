@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AttendanceTrackerMicroservices.AuthAPI", "src\AttendanceTrackerMicroservices.AuthAPI\AttendanceTrackerMicroservices.AuthAPI.csproj", "{A6029421-AEB7-4DAB-B679-E987D4AEE947}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AttendanceTrackerMicroservices.TrackerAPI", "src\AttendanceTrackerMicroservices.TrackerAPI\AttendanceTrackerMicroservices.TrackerAPI.csproj", "{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,6 +25,10 @@ Global
 		{A6029421-AEB7-4DAB-B679-E987D4AEE947}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A6029421-AEB7-4DAB-B679-E987D4AEE947}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A6029421-AEB7-4DAB-B679-E987D4AEE947}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -30,6 +36,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{C407FF75-6565-4772-83A7-E85331822F07} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{A6029421-AEB7-4DAB-B679-E987D4AEE947} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D950A72E-8D8F-4BF2-A3CD-00CDD14022C0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {18EBE5DF-9BBB-4388-BD9B-FC7195FF0647}
