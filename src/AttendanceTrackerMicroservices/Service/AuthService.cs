@@ -14,9 +14,14 @@ namespace AttendanceTrackerMicroservices.Service
             _baseService = baseService;
         }
 
-        public Task<ResponseDTO?> AssignRole(RegistrationRequestDTO assignRoleRequest)
+        public async Task<ResponseDTO?> AssignRoleAsync(RegistrationRequestDTO assignRoleRequest)
         {
-            throw new NotImplementedException();
+            return await _baseService.SendAsync(new RequestDTO()
+            {
+                ApiType = SD.ApiType.POST,
+                Data = assignRoleRequest,
+                Url = AuthAPIBase + "/api/auth/AssignRole"
+            });
         }
 
         public async Task<ResponseDTO?> LoginAsync(LoginRequestDTO loginRequest)
@@ -31,9 +36,16 @@ namespace AttendanceTrackerMicroservices.Service
             return await _baseService.SendAsync(request, withBearer: false);
         }
 
-        public Task<ResponseDTO?> RegistrationAsync(RegistrationRequestDTO registrationRequest)
+        public async Task<ResponseDTO?> RegistrationAsync(RegistrationRequestDTO registrationRequest)
         {
-            throw new NotImplementedException();
+            RequestDTO request = new RequestDTO()
+            {
+                ApiType = ApiType.POST,
+                Data = registrationRequest,
+                Url = AuthAPIBase + "/api/auth/register"
+            };
+
+            return await _baseService.SendAsync(request, withBearer: false);
         }
     }
 }

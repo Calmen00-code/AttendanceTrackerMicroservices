@@ -6,6 +6,6 @@ namespace AttendanceTrackerMicroservices.Service.IService
     {
         Task<ResponseDTO?> LoginAsync(LoginRequestDTO loginRequest);
         Task<ResponseDTO?> RegistrationAsync(RegistrationRequestDTO registrationRequest);
-        Task<ResponseDTO?> AssignRole(RegistrationRequestDTO assignRoleRequest);
+        Task<ResponseDTO?> AssignRoleAsync(RegistrationRequestDTO assignRoleRequest);
     }
 }

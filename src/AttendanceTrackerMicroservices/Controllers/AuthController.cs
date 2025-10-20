@@ -1,8 +1,10 @@
 ﻿using AttendanceTrackerMicroservices.Models;
 using AttendanceTrackerMicroservices.Service.IService;
+using AttendanceTrackerMicroservices.Utility;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -56,12 +58,58 @@ namespace AttendanceTrackerMicroservices.Controllers
             }
         }
 
+        [HttpGet]
         public IActionResult Register()
         {
+            ViewBag.RoleList = BuildDisplayRoleList();
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegistrationRequestDTO registrationRequest)
+        {
+            ResponseDTO response = await _authService.RegistrationAsync(registrationRequest);
+            ResponseDTO assignRole;
+
+            if (response != null && response.IsSuccess)
+            {
+                // at this point, user has been registered sucessfully
+
+                // now check if user did not select any role
+                // if so, default the role to Customer
+                if (string.IsNullOrEmpty(registrationRequest.Role))
+                {
+                    registrationRequest.Role = SD.ROLE_CUSTOMER;
+                }
+
+                assignRole = await _authService.AssignRoleAsync(registrationRequest);
+                if (assignRole != null && assignRole.IsSuccess)
+                {
+                    // successfully assign role
+                    TempData["success"] = "Registration successful";
+                    return RedirectToAction(nameof(Login));
+                }
+            }
+            else
+            {
+                TempData["error"] = response.Message;
+            }
+
+            ViewBag.RoleList = BuildDisplayRoleList();
             return View();
         }
 
         // PRIVATE METHODS
+        private List<SelectListItem> BuildDisplayRoleList()
+        {
+            var roleList = new List<SelectListItem>()
+            {
+                new SelectListItem() { Text=SD.ROLE_ADMIN, Value = SD.ROLE_ADMIN },
+                new SelectListItem() { Text=SD.ROLE_CUSTOMER, Value = SD.ROLE_CUSTOMER }
+            };
+            return roleList;
+        }
+
         private async Task SignInUser(LoginResponseDTO login)
         {
             var handler = new JwtSecurityTokenHandler();
