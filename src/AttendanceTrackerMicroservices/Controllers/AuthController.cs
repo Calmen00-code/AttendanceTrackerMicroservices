@@ -51,8 +51,8 @@ namespace AttendanceTrackerMicroservices.Controllers
             }
             else
             {
-                // TODO: use tempdata
-                return BadRequest();
+                TempData["error"] = response.Message;
+                return View(loginRequest);
             }
         }
 
