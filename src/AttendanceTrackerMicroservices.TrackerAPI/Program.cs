@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Caching.Distributed;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -19,6 +21,17 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// register the session middleware (redis)
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var currentTimeUTC = DateTime.UtcNow.ToString();
+    byte[] encodedCurrentTimeUTC = System.Text.Encoding.UTF8.GetBytes(currentTimeUTC);
+    var options = new DistributedCacheEntryOptions()
+        .SetSlidingExpiration(TimeSpan.FromSeconds(60));
+    app.Services.GetService<IDistributedCache>()
+                              .Set("cachedTimeUTC", encodedCurrentTimeUTC, options);
+});
 
 app.MapControllers();
 

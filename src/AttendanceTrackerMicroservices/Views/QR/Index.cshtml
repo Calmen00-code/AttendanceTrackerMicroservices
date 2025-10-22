@@ -1,0 +1,33 @@
+﻿<div class="row justify-content-center mb-3">
+    <div class="text-center">
+        <h4>
+            Scan the QR code below to record your check-in or check-out.
+        </h4>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <img src="@ViewBag.QrCodeUri" class="img-thumbnail" />
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script>
+        // Establish a connection to the SignalR hub with endpoint "/refreshHub"
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/refreshHub")
+            .build();
+
+        // Listen for a SignalR event named "RefreshPage"
+        connection.on("RefreshPage", () => {
+            location.reload(); // Refresh page
+        });
+
+        // log any errors to the console
+        connection.start().catch(err => console.error(err));
+    </script>
+}

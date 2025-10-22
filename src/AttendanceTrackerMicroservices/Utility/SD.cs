@@ -7,6 +7,7 @@
         public const string TOKEN_COOKIE = "JWT_TOKEN";
         public const string ROLE_CUSTOMER = "CUSTOMER";
         public const string ROLE_ADMIN = "ADMIN";
+        public const string GUID_SESSION = "GuidSession";
 
         public enum ApiType
         {
