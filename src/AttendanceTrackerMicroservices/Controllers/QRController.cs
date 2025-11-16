@@ -1,6 +1,9 @@
 ﻿using AttendanceTrackerMicroservices.Models.ViewModels;
+using AttendanceTrackerMicroservices.Service.IService;
 using AttendanceTrackerMicroservices.Utility;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
 using QRCoder;
 using static QRCoder.PayloadGenerator.WiFi;
@@ -10,6 +13,7 @@ namespace AttendanceTrackerMicroservices.Controllers
     public class QRController : Controller
     {
         private readonly IDistributedCache _cache;
+        private readonly IAuthService _authService;
         private static readonly object _sessionTokenLock = new object();
 
         public QRController(IDistributedCache cache)
@@ -74,6 +78,50 @@ namespace AttendanceTrackerMicroservices.Controllers
             };
 
             return View(authenticationVM);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Authentication(AuthenticationVM model)
+        {
+            // Check if token has expired
+            if (!IsTokenValid(model.Token))
+            {
+                return UnauthorizedAction("Token has expired. Please rescan the QR code.");
+            }
+
+            if (ModelState.IsValid)
+            {
+                var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, isPersistent: false, lockoutOnFailure: false);
+                if (result.Succeeded)
+                {
+                    // Update a new token after each successful authentication for check in/out
+                    // Ensures only one thread enters at a time.
+                    // In case multiple users submitted request at the same time
+                    lock (_sessionTokenLock)
+                    {
+                        _cache.SetString(SD.GUID_SESSION, GenerateNewToken());
+                        GenerateQRCode();
+                    }
+
+                    // force refresh the page on all clients
+                    await _hubContext.Clients.All.SendAsync("RefreshPage");
+
+                    // Unfortunately, RedirectToAction does not support passing complex object
+                    // so we have to make use of TempData[] here and collect the data on the next
+                    // RecordAttendance() method
+                    TempData["Token"] = model.Token;
+                    return RedirectToAction("RecordAttendance", "Home", new { area = "QR" });
+                }
+                else
+                {
+                    return RedirectToAction("UnauthorizedAction", "Home",
+                        new { area = "QR", message = "Incorrect username and password!" });
+                }
+            }
+
+            // If we got this far, something failed, redisplay form
+            return RedirectToAction("UnauthorizedAction", "Home",
+                new { area = "QR", message = "Something went wrong, please rescan QR and try again..." });
         }
 
         // PRIVATE METHODS
