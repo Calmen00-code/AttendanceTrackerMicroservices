@@ -93,6 +93,20 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service
             return loginResponseDTO;
         }
 
+        public async Task<bool> ValidateUser(LoginRequestDTO loginRequestDTO)
+        {
+            var user = _db.ApplicationUsers.FirstOrDefault(u => u.UserName.ToLower() == loginRequestDTO.UserName.ToLower());
+
+            bool isValid = await _userManager.CheckPasswordAsync(user, loginRequestDTO.Password);
+
+            if (user == null || !isValid)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public async Task<bool> AssignRole(string email, string roleName)
         {
             var user = _db.ApplicationUsers.FirstOrDefault(u => u.Email.ToLower() == email.ToLower());
