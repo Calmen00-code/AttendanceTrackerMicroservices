@@ -1,0 +1,10 @@
+﻿@model string
+
+@if (!string.IsNullOrEmpty(Model))
+{
+    <h1>@Model</h1>
+}
+else
+{
+    <h1>Something went wrong... Please try again</h1>
+}
