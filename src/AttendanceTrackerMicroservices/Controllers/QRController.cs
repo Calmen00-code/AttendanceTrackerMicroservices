@@ -1,7 +1,9 @@
-﻿using AttendanceTrackerMicroservices.Utility;
+﻿using AttendanceTrackerMicroservices.Models.ViewModels;
+using AttendanceTrackerMicroservices.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using QRCoder;
+using static QRCoder.PayloadGenerator.WiFi;
 
 namespace AttendanceTrackerMicroservices.Controllers
 {
@@ -36,7 +38,64 @@ namespace AttendanceTrackerMicroservices.Controllers
             return View();
         }
 
+        public IActionResult UnauthorizedAction(string message)
+        {
+            TempData["ErrorMessage"] = message;
+            return View("OnFailRecord", message);
+        }
+
+        /// <summary>
+        /// Display the authentication login page for user to perform check-in and check-out
+        /// </summary>
+        /// <param name="token">The authentication token to validate if it is expired</param>
+        /// <returns>
+        /// <item>An unauthorized response if the token is invalid or expired <see cref="UnauthorizedAction(string)"/></item>
+        /// <item>The authentication view with the token populated in the view model if token validation succeeds</item>
+        /// </returns>
+        /// <remarks>
+        /// This method performs the following steps:
+        /// <list type="number">
+        /// <item>Validates the token using <see cref="IsTokenValid(string)"/></item>
+        /// <item>Returns an unauthorized action with an error message if validation fails</item>
+        /// <item>Creates an <see cref="AuthenticationVM"/> instance with the valid token</item>
+        /// <item>Returns the authentication view with the populated view model</item>
+        /// </list>
+        /// </remarks>
+        public IActionResult Authentication(string token)
+        {
+            if (!IsTokenValid(token))
+            {
+                return UnauthorizedAction("Token has expired. Please rescan the QR code.");
+            }
+
+            AuthenticationVM authenticationVM = new()
+            {
+                Token = token,
+            };
+
+            return View(authenticationVM);
+        }
+
         // PRIVATE METHODS
+
+        /// <summary>
+        /// Validates whether the provided token is valid and matches the current session.
+        /// Otherwise, the token is expired since new token is generated 
+        /// <see cref="_cache.SetString(SD.GUID_SESSION, GenerateNewToken())"/> 
+        /// new valid 
+        /// </summary>
+        /// <param name="token">The authentication token to validate.</param>
+        /// <returns>
+        /// <c>true</c> if the token is not null/empty and matches the cached session GUID; 
+        /// otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// Token will be <c>invalid</c> if user has yet to generate their token or expired 
+        /// </remarks>
+        private bool IsTokenValid(string token)
+        {
+            return (!string.IsNullOrEmpty(token)) && (_cache.GetString(SD.GUID_SESSION) == token);
+        }
 
         /// <summary>
         /// Generates a QR code containing an authentication URL with an embedded session token.
@@ -50,8 +109,14 @@ namespace AttendanceTrackerMicroservices.Controllers
         private void GenerateQRCode()
         {
             // Define and embed token/session into authentication page URL
-            string authenticationUrl =
-                $"{Url.Action("Authentication", "Home", new { area = "QR" }, Request.Scheme)}?token={_cache.GetString(SD.GUID_SESSION)}";
+            string authenticationUrl = Url.Action(
+                "Authentication",
+                "QR",
+                new { token = _cache.GetString(SD.GUID_SESSION) },
+                Request.Scheme,
+                Request.Host.ToString()
+            );
+                //$"{Url.Action("Authentication", "QR", Request.Scheme, Request.Host.ToString())}?token={_cache.GetString(SD.GUID_SESSION)}";
 
             // QR Code Generation on Page Load
             QRCodeGenerator qrGenerator = new QRCodeGenerator();
