@@ -7,5 +7,6 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service.IService
         Task<string> Register(RegistrationRequestDTO registrationRequestDTO);
         Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO);
         Task<bool> AssignRole(string email, string roleName);
+        Task<bool> ValidateUser(LoginRequestDTO loginRequestDTO);
     }
 }

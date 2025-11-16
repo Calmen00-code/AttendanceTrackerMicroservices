@@ -1,6 +1,7 @@
 ﻿using AttendanceTrackerMicroservices.Models;
 using AttendanceTrackerMicroservices.Service.IService;
 using AttendanceTrackerMicroservices.Utility;
+using Microsoft.AspNetCore.Identity.Data;
 using static AttendanceTrackerMicroservices.Utility.SD;
 
 namespace AttendanceTrackerMicroservices.Service
@@ -43,6 +44,18 @@ namespace AttendanceTrackerMicroservices.Service
                 ApiType = ApiType.POST,
                 Data = registrationRequest,
                 Url = AuthAPIBase + "/api/auth/register"
+            };
+
+            return await _baseService.SendAsync(request, withBearer: false);
+        }
+
+        public async Task<ResponseDTO?> ValidateUser(LoginRequestDTO validateRequest)
+        {
+            RequestDTO request = new RequestDTO()
+            {
+                ApiType = ApiType.POST,
+                Data = validateRequest,
+                Url = AuthAPIBase + "/api/auth/validateUser"
             };
 
             return await _baseService.SendAsync(request, withBearer: false);
