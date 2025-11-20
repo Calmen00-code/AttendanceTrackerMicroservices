@@ -1,4 +1,5 @@
-﻿using AttendanceTrackerMicroservices.Models;
+﻿using AttendanceTrackerMicroservices.Hubs;
+using AttendanceTrackerMicroservices.Models;
 using AttendanceTrackerMicroservices.Models.ViewModels;
 using AttendanceTrackerMicroservices.Service.IService;
 using AttendanceTrackerMicroservices.Utility;
@@ -16,11 +17,17 @@ namespace AttendanceTrackerMicroservices.Controllers
     {
         private readonly IDistributedCache _cache;
         private readonly IAuthService _authService;
+        private readonly IHubContext<RefreshHub> _hubContext;
         private static readonly object _sessionTokenLock = new object();
 
-        public QRController(IDistributedCache cache)
+        public QRController(
+            IDistributedCache cache,
+            IAuthService authService,
+            IHubContext<RefreshHub> hubContext)
         {
             _cache = cache;
+            _authService = authService;
+            _hubContext = hubContext;
         }
 
         public IActionResult Index()
@@ -102,43 +109,31 @@ namespace AttendanceTrackerMicroservices.Controllers
                 ResponseDTO response = await _authService.ValidateUser(loginRequestDTO);
                 if (response != null && response.IsSuccess)
                 {
+                    // Update a new token after each successful authentication for check in/out
+                    // Ensures only one thread enters at a time.
+                    // In case multiple users submitted request at the same time
+                    lock (_sessionTokenLock)
+                    {
+                        _cache.SetString(SD.GUID_SESSION, GenerateNewToken());
+                        GenerateQRCode();
+                    }
+
+                    // force refresh the page on all clients
+                    await _hubContext.Clients.All.SendAsync("RefreshPage");
+
+                    // Unfortunately, RedirectToAction does not support passing complex object
+                    // so we have to make use of TempData[] here and collect the data on the next
+                    // RecordAttendance() method
+                    TempData["Token"] = model.Token;
+                    return RedirectToAction("RecordAttendance", "Home", new { area = "QR" });
+                }
+                else
+                {
+                    return UnauthorizedAction("Incorrect password and username!");
                 }
             }
-            return null;
-
-            //if (ModelState.IsValid)
-            //{
-            //    var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, isPersistent: false, lockoutOnFailure: false);
-            //    if (result.Succeeded)
-            //    {
-            //        // Update a new token after each successful authentication for check in/out
-            //        // Ensures only one thread enters at a time.
-            //        // In case multiple users submitted request at the same time
-            //        lock (_sessionTokenLock)
-            //        {
-            //            _cache.SetString(SD.GUID_SESSION, GenerateNewToken());
-            //            GenerateQRCode();
-            //        }
-
-            //        // force refresh the page on all clients
-            //        await _hubContext.Clients.All.SendAsync("RefreshPage");
-
-            //        // Unfortunately, RedirectToAction does not support passing complex object
-            //        // so we have to make use of TempData[] here and collect the data on the next
-            //        // RecordAttendance() method
-            //        TempData["Token"] = model.Token;
-            //        return RedirectToAction("RecordAttendance", "Home", new { area = "QR" });
-            //    }
-            //    else
-            //    {
-            //        return RedirectToAction("UnauthorizedAction", "Home",
-            //            new { area = "QR", message = "Incorrect username and password!" });
-            //    }
-            //}
-
-            //// If we got this far, something failed, redisplay form
-            //return RedirectToAction("UnauthorizedAction", "Home",
-            //    new { area = "QR", message = "Something went wrong, please rescan QR and try again..." });
+            // If we got this far, something failed, redisplay form
+            return UnauthorizedAction("Something went wrong, please rescan QR and try again...");
         }
 
         // PRIVATE METHODS
@@ -181,7 +176,6 @@ namespace AttendanceTrackerMicroservices.Controllers
                 Request.Scheme,
                 Request.Host.ToString()
             );
-                //$"{Url.Action("Authentication", "QR", Request.Scheme, Request.Host.ToString())}?token={_cache.GetString(SD.GUID_SESSION)}";
 
             // QR Code Generation on Page Load
             QRCodeGenerator qrGenerator = new QRCodeGenerator();
