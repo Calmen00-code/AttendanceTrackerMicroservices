@@ -52,7 +52,7 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Controllers
         {
             bool isUserValidated = await _authService.ValidateUser(loginRequestDTO);
 
-            if (isUserValidated)
+            if (!isUserValidated)
             {
                 _response.IsSuccess = false;
                 _response.Message = "Username or password is incorrect!";
