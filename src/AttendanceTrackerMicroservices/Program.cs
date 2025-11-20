@@ -1,3 +1,4 @@
+using AttendanceTrackerMicroservices.Hubs;
 using AttendanceTrackerMicroservices.Service;
 using AttendanceTrackerMicroservices.Service.IService;
 using AttendanceTrackerMicroservices.Utility;
@@ -10,8 +11,19 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
-//builder.Services.AddHttpClient<IAuthService, AuthService>();
+// add SignalR
+builder.Services.AddSignalR();
+
+// WARNING: This line shall be removed from production
+builder.Services.AddHttpClient("AttendanceTrackerAPI")
+    .ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        });
+
 builder.Services.AddHttpClient<IBaseService, BaseService>();
+
 SD.AuthAPIBase = builder.Configuration["ServiceUrls:AuthAPI"];
 builder.Services.AddScoped<IBaseService, BaseService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -42,6 +54,9 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Map SignalR RefreshHub to endpoint "/refreshHub"
+app.MapHub<RefreshHub>("/refreshHub");
 
 app.MapControllerRoute(
     name: "default",
