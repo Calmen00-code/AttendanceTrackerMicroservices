@@ -1,0 +1,36 @@
+﻿@model AttendanceTrackerMicroservices.Models.ViewModels.AuthenticationVM
+
+@{
+    ViewData["Title"] = "Authentication";
+}
+
+<h1>Record attendance</h1>
+
+<form method="post">
+    <input asp-for="@Model.Token" hidden />
+    <input asp-for="@Model.IsCheckIn" hidden />
+    <input asp-for="@Model.Id" hidden />
+    <input type="hidden" id="id" value="@Model.Id" />
+
+    <table id="dailyRecordTable" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Check In</th>
+                <th>Check Out</th>
+            </tr>
+        </thead>
+    </table>
+
+    @if (Model.IsCheckIn)
+    {
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Check In</button>
+    }
+    else
+    {
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Check Out</button>
+    }
+</form>
+
+@section Scripts {
+    <script src="~/js/Employee/dailyRecord.js"></script>
+}

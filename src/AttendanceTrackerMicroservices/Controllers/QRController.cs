@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using QRCoder;
+using System.Text.Json;
 using static QRCoder.PayloadGenerator.WiFi;
 
 namespace AttendanceTrackerMicroservices.Controllers
@@ -121,11 +122,16 @@ namespace AttendanceTrackerMicroservices.Controllers
                     // force refresh the page on all clients
                     await _hubContext.Clients.All.SendAsync("RefreshPage");
 
+                    // Map the response data to UserDTO
+                    string jsonString = JsonConvert.SerializeObject(response.Result);
+                    UserDTO user = JsonConvert.DeserializeObject<UserDTO>(jsonString);
+
                     // Unfortunately, RedirectToAction does not support passing complex object
                     // so we have to make use of TempData[] here and collect the data on the next
                     // RecordAttendance() method
                     TempData["Token"] = model.Token;
-                    return RedirectToAction("RecordAttendance", "Home", new { area = "QR" });
+                    TempData["UserInfo"] = JsonConvert.SerializeObject(user);
+                    return RedirectToAction("RecordAttendance", "QR");
                 }
                 else
                 {
@@ -134,6 +140,26 @@ namespace AttendanceTrackerMicroservices.Controllers
             }
             // If we got this far, something failed, redisplay form
             return UnauthorizedAction("Something went wrong, please rescan QR and try again...");
+        }
+
+        public IActionResult RecordAttendance()
+        {
+            UserDTO userDTO = null;
+            if (TempData["UserInfo"] != null)
+            {
+                string userJson = TempData["UserInfo"] as string;
+                userDTO = JsonConvert.DeserializeObject<UserDTO>(userJson);
+            }
+
+            AuthenticationVM model = new AuthenticationVM
+            {
+                Token = TempData["Token"] as string,
+                IsCheckIn = true,
+                //IsCheckIn = UserShouldCheckIn(),
+                Id = userDTO?.ID
+            };
+
+            return View(model);
         }
 
         // PRIVATE METHODS
