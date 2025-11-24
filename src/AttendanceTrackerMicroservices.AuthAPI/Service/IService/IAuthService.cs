@@ -1,4 +1,5 @@
-﻿using AttendanceTrackerMicroservices.AuthAPI.Models.DTO;
+﻿using AttendanceTrackerMicroservices.AuthAPI.Models;
+using AttendanceTrackerMicroservices.AuthAPI.Models.DTO;
 
 namespace AttendanceTrackerMicroservices.AuthAPI.Service.IService
 {
@@ -7,6 +8,6 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Service.IService
         Task<string> Register(RegistrationRequestDTO registrationRequestDTO);
         Task<LoginResponseDTO> Login(LoginRequestDTO loginRequestDTO);
         Task<bool> AssignRole(string email, string roleName);
-        Task<bool> ValidateUser(LoginRequestDTO loginRequestDTO);
+        Task<ApplicationUser?> ValidateUser(LoginRequestDTO loginRequestDTO);
     }
 }

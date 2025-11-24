@@ -13,7 +13,7 @@ namespace AttendanceTrackerMicroservices.Models.ViewModels
         public string Password { get; set; }
 
         [ValidateNever]
-        public string EmployeeId { get; set; }
+        public string Id { get; set; }
 
         [ValidateNever]
         public bool IsCheckIn { get; set; }

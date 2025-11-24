@@ -1,4 +1,5 @@
-﻿using AttendanceTrackerMicroservices.AuthAPI.Models.DTO;
+﻿using AttendanceTrackerMicroservices.AuthAPI.Models;
+using AttendanceTrackerMicroservices.AuthAPI.Models.DTO;
 using AttendanceTrackerMicroservices.AuthAPI.Service.IService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -50,16 +51,16 @@ namespace AttendanceTrackerMicroservices.AuthAPI.Controllers
         [HttpPost("validateUser")]
         public async Task<IActionResult> ValidateUser([FromBody] LoginRequestDTO loginRequestDTO)
         {
-            bool isUserValidated = await _authService.ValidateUser(loginRequestDTO);
+            ApplicationUser user = await _authService.ValidateUser(loginRequestDTO);
 
-            if (!isUserValidated)
+            if (user == null)
             {
                 _response.IsSuccess = false;
                 _response.Message = "Username or password is incorrect!";
                 return BadRequest(_response);
             }
 
-            _response.Result = isUserValidated;
+            _response.Result = user;
             return Ok(_response);
         }
 
