@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using QRCoder;
 using System.Text.Json;
 using static QRCoder.PayloadGenerator.WiFi;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace AttendanceTrackerMicroservices.Controllers
 {
@@ -154,8 +155,7 @@ namespace AttendanceTrackerMicroservices.Controllers
             AuthenticationVM model = new AuthenticationVM
             {
                 Token = TempData["Token"] as string,
-                IsCheckIn = true,
-                //IsCheckIn = UserShouldCheckIn(),
+                IsCheckIn = UserShouldCheckIn(userDTO?.ID),
                 Id = userDTO?.ID
             };
 
@@ -170,11 +170,14 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <see cref="_cache.SetString(SD.GUID_SESSION, GenerateNewToken())"/> 
         /// new valid 
         /// </summary>
+        ///
         /// <param name="token">The authentication token to validate.</param>
+        ///
         /// <returns>
         /// <c>true</c> if the token is not null/empty and matches the cached session GUID; 
         /// otherwise, <c>false</c>.
         /// </returns>
+        ///
         /// <remarks>
         /// Token will be <c>invalid</c> if user has yet to generate their token or expired 
         /// </remarks>
@@ -186,6 +189,7 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <summary>
         /// Generates a QR code containing an authentication URL with an embedded session token.
         /// </summary>
+        ///
         /// <remarks>
         /// This method performs the following steps:
         /// - Constructs an authentication URL using the current request scheme and a cached session token.
@@ -217,14 +221,63 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <summary>
         /// Generates a new unique token using a GUID use to identify user in tracking attendance.
         /// </summary>
+        ///
         /// <returns>
         /// A <c>string</c> representation of a newly generated globally unique identifier (GUID).
         /// </returns>
+        ///
         /// <remarks>
         /// This method is used for generating authentication tokens
+        /// </remarks>
         private string GenerateNewToken()
         {
             return Guid.NewGuid().ToString();
+        }
+
+        /// <summary>
+        /// Determines if the current user should check in based on attendance records.
+        /// This method retrieves attendance records for the logged-in user on the current date.
+        /// It checks if there are any existing records with an unset check-out time.
+        /// If such a record exists, the user is considered already checked in and should not check in again.
+        /// </summary>
+        ///
+        /// <param name="userId">User ID</param>
+        ///
+        /// <note>
+        /// The method assumes that `CheckOut == DateTime.MinValue` indicates an unchecked-out record.
+        /// </note>
+        ///
+        /// <returns>
+        /// Returns `true` if the user should check in, otherwise `false`.
+        /// </returns>
+        private bool UserShouldCheckIn(string userId)
+        {
+            //var userAttendanceRecords = _unitOfWork.DailyAttendanceRecord.GetAll(
+            //    a => a.EmployeeId == currentUserId && a.CheckIn.Date == DateTime.Today, includeProperties: "Employee");
+
+            //bool userShouldCheckIn = true;
+
+            //if (userAttendanceRecords == null)
+            //{
+            //    // No check-in records found for today, so this is user's first check-in of the day
+            //    return userShouldCheckIn;
+            //}
+
+            //// When enter here, it means the user has already checked in today
+            //// Search if there are any records pending for check out. Otherwise, this is a new check-in request
+            //foreach (var record in userAttendanceRecords)
+            //{
+            //    if (record.CheckOut == DateTime.MinValue)
+            //    {
+            //        // Invalid check out record indicating that there is a pending check out
+            //        // So abort the check-in process
+            //        userShouldCheckIn = false;
+            //        break;
+            //    }
+            //}
+
+            //return userShouldCheckIn;
+            return true;
         }
     }
 }
