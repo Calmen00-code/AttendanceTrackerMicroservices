@@ -8,5 +8,10 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
     [ApiController]
     public class TrackerAPIController : ControllerBase
     {
+        [HttpGet("get-all-records/{id}")]
+        public async Task<IActionResult> GetAllAttendanceRecords(string? id)
+        {
+            throw new Exception();
+        }
     }
 }
