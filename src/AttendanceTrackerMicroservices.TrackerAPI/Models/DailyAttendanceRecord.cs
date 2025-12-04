@@ -4,6 +4,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AttendanceTrackerMicroservices.TrackerAPI.Models
 {
+    /// <summary>
+    /// Represents a daily attendance record for an user,
+    /// including check-in and check-out times on a specific single day.
+    /// </summary>
     public class DailyAttendanceRecord
     {
         [Key]
@@ -14,10 +18,6 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Models
         public DateTime CheckOut { get; set; }
 
         [Required]
-        public string EmployeeId { get; set; }
-
-        [ForeignKey(nameof(EmployeeId))]
-        [ValidateNever]
-        public ApplicationUser User { get; set; }
+        public string UserId { get; set; }
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AttendanceTrackerMicroservices.TrackerAPI.Data
 {
-    public class AppDbContext : IdentityDbContext
+    public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 

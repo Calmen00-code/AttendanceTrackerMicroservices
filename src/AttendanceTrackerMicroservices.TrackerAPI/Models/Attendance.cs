@@ -4,6 +4,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AttendanceTrackerMicroservices.TrackerAPI.Models
 {
+    /// <summary>
+    /// Represents the total working hours of an user for the entire day
+    /// </summary>
     public class Attendance
     {
         [Key]
@@ -16,8 +19,5 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Models
 
         [Required]
         public string UserId { get; set; }
-
-        [ForeignKey(nameof(UserId))]
-        public ApplicationUser User { get; set; }
     }
 }
