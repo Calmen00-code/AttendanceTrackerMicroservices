@@ -1,4 +1,6 @@
 using AttendanceTrackerMicroservices.TrackerAPI.Data;
+using AttendanceTrackerMicroservices.TrackerAPI.Service;
+using AttendanceTrackerMicroservices.TrackerAPI.Service.IService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 
@@ -11,9 +13,12 @@ builder.Services.AddDbContext<AppDbContext>(option =>
     option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<ITrackerService, TrackerService>();
 
 var app = builder.Build();
 
