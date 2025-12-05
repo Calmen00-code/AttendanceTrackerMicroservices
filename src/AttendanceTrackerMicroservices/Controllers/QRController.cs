@@ -19,17 +19,20 @@ namespace AttendanceTrackerMicroservices.Controllers
     {
         private readonly IDistributedCache _cache;
         private readonly IAuthService _authService;
+        private readonly ITrackerService _trackerService;
         private readonly IHubContext<RefreshHub> _hubContext;
         private static readonly object _sessionTokenLock = new object();
 
         public QRController(
             IDistributedCache cache,
             IAuthService authService,
+            ITrackerService trackerService,
             IHubContext<RefreshHub> hubContext)
         {
             _cache = cache;
             _authService = authService;
             _hubContext = hubContext;
+            _trackerService = trackerService;
         }
 
         public IActionResult Index()
@@ -143,6 +146,13 @@ namespace AttendanceTrackerMicroservices.Controllers
             return UnauthorizedAction("Something went wrong, please rescan QR and try again...");
         }
 
+        /// <summary>
+        /// Display the main page to let user fill in information
+        /// and perform check-in or check-out
+        /// </summary>
+        /// <returns>
+        /// View page for user data field input
+        /// </returns>
         public IActionResult RecordAttendance()
         {
             UserDTO userDTO = null;
@@ -152,14 +162,21 @@ namespace AttendanceTrackerMicroservices.Controllers
                 userDTO = JsonConvert.DeserializeObject<UserDTO>(userJson);
             }
 
-            AuthenticationVM model = new AuthenticationVM
+            try
             {
-                Token = TempData["Token"] as string,
-                IsCheckIn = UserShouldCheckIn(userDTO?.ID),
-                Id = userDTO?.ID
-            };
-
-            return View(model);
+                AuthenticationVM model = new AuthenticationVM
+                {
+                    Token = TempData["Token"] as string,
+                    IsCheckIn = UserShouldCheckIn(userDTO?.ID),
+                    Id = userDTO?.ID
+                };
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                TempData["error"] = ex.Message;
+            }
+            return View();
         }
 
         // PRIVATE METHODS
@@ -170,14 +187,11 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <see cref="_cache.SetString(SD.GUID_SESSION, GenerateNewToken())"/> 
         /// new valid 
         /// </summary>
-        ///
         /// <param name="token">The authentication token to validate.</param>
-        ///
         /// <returns>
         /// <c>true</c> if the token is not null/empty and matches the cached session GUID; 
         /// otherwise, <c>false</c>.
         /// </returns>
-        ///
         /// <remarks>
         /// Token will be <c>invalid</c> if user has yet to generate their token or expired 
         /// </remarks>
@@ -189,7 +203,6 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <summary>
         /// Generates a QR code containing an authentication URL with an embedded session token.
         /// </summary>
-        ///
         /// <remarks>
         /// This method performs the following steps:
         /// - Constructs an authentication URL using the current request scheme and a cached session token.
@@ -221,11 +234,9 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <summary>
         /// Generates a new unique token using a GUID use to identify user in tracking attendance.
         /// </summary>
-        ///
         /// <returns>
         /// A <c>string</c> representation of a newly generated globally unique identifier (GUID).
         /// </returns>
-        ///
         /// <remarks>
         /// This method is used for generating authentication tokens
         /// </remarks>
@@ -240,44 +251,27 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// It checks if there are any existing records with an unset check-out time.
         /// If such a record exists, the user is considered already checked in and should not check in again.
         /// </summary>
-        ///
         /// <param name="userId">User ID</param>
-        ///
         /// <note>
         /// The method assumes that `CheckOut == DateTime.MinValue` indicates an unchecked-out record.
         /// </note>
-        ///
         /// <returns>
         /// Returns `true` if the user should check in, otherwise `false`.
         /// </returns>
+        /// <exception cref="Exception">
+        /// Thrown when a responseDTO result is null
+        /// </exception>
         private bool UserShouldCheckIn(string userId)
         {
-            //var userAttendanceRecords = _unitOfWork.DailyAttendanceRecord.GetAll(
-            //    a => a.EmployeeId == currentUserId && a.CheckIn.Date == DateTime.Today, includeProperties: "Employee");
+            Task<ResponseDTO?> responseDTO = _trackerService.ShouldUserCheckIn(userId);
+            if (responseDTO.Result == null)
+            {
+                throw new Exception("Something went wrong, result could not be retrieved!");
+            }
 
-            //bool userShouldCheckIn = true;
+            bool shouldUserCheckIn = JsonConvert.DeserializeObject<bool>(Convert.ToString(responseDTO.Result));
 
-            //if (userAttendanceRecords == null)
-            //{
-            //    // No check-in records found for today, so this is user's first check-in of the day
-            //    return userShouldCheckIn;
-            //}
-
-            //// When enter here, it means the user has already checked in today
-            //// Search if there are any records pending for check out. Otherwise, this is a new check-in request
-            //foreach (var record in userAttendanceRecords)
-            //{
-            //    if (record.CheckOut == DateTime.MinValue)
-            //    {
-            //        // Invalid check out record indicating that there is a pending check out
-            //        // So abort the check-in process
-            //        userShouldCheckIn = false;
-            //        break;
-            //    }
-            //}
-
-            //return userShouldCheckIn;
-            return true;
+            return shouldUserCheckIn;
         }
     }
 }
