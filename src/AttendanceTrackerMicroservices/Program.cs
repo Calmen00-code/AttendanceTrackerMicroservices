@@ -25,9 +25,11 @@ builder.Services.AddHttpClient("AttendanceTrackerAPI")
 builder.Services.AddHttpClient<IBaseService, BaseService>();
 
 SD.AuthAPIBase = builder.Configuration["ServiceUrls:AuthAPI"];
+SD.TrackerAPIBase = builder.Configuration["ServiceUrls:TrackerAPI"];
 builder.Services.AddScoped<IBaseService, BaseService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenProvider, TokenProvider>();
+builder.Services.AddScoped<ITrackerService, TrackerService>();
 
 // configure authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -53,6 +55,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // Map SignalR RefreshHub to endpoint "/refreshHub"
