@@ -13,13 +13,25 @@ namespace AttendanceTrackerMicroservices.Service
             _baseService = baseService;
         }
 
-        public async Task<ResponseDTO?> ShouldUserCheckIn(string userId)
+        public async Task<ResponseDTO?> ShouldUserCheckInAsync(string userId)
         {
             RequestDTO requestDTO = new RequestDTO()
             {
                 ApiType = ApiType.GET,
                 Data = userId,
                 Url = $"{TrackerAPIBase}/api/tracker/should-user-check-in/{userId}"
+            };
+
+            return await _baseService.SendAsync(requestDTO);
+        }
+        
+        public async Task<ResponseDTO?> GetUserAttendanceRecordsForTodayAsync(string userId)
+        {
+            RequestDTO requestDTO = new RequestDTO()
+            {
+                ApiType = ApiType.GET,
+                Data = userId,
+                Url = $"{TrackerAPIBase}/api/tracker/get-today-attendance-records/{userId}"
             };
 
             return await _baseService.SendAsync(requestDTO);

@@ -18,7 +18,8 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Service
         public async Task<List<DailyAttendanceRecord>> GetDailyAttendanceRecords(string userId)
         {
             return await _db.DailyAttendanceRecords
-                .Where(u => u.UserId.ToLower() == userId).ToListAsync();
+                .Where(u => u.UserId.ToLower() == userId && u.CheckIn.Date == DateTime.Today)
+                .ToListAsync();
         }
     }
 }
