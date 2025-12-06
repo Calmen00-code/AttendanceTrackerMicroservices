@@ -17,19 +17,22 @@ namespace AttendanceTrackerMicroservices.Controllers
 {
     public class QRController : Controller
     {
-        private readonly IDistributedCache _cache;
+        // This is required for generating unique token so that user cannot reused
+        // the same login page.
+        private readonly IDistributedCache _qrCodeTokenCache;
+        
         private readonly IAuthService _authService;
         private readonly ITrackerService _trackerService;
         private readonly IHubContext<RefreshHub> _hubContext;
         private static readonly object _sessionTokenLock = new object();
 
         public QRController(
-            IDistributedCache cache,
+            IDistributedCache qrCodeTokenCache,
             IAuthService authService,
             ITrackerService trackerService,
             IHubContext<RefreshHub> hubContext)
         {
-            _cache = cache;
+            _qrCodeTokenCache = qrCodeTokenCache;
             _authService = authService;
             _hubContext = hubContext;
             _trackerService = trackerService;
@@ -43,12 +46,12 @@ namespace AttendanceTrackerMicroservices.Controllers
             {
                 // Generate and initialize unique GUID token for the QR code which expires when the user check in or check out
                 // Used at the first time the app is loaded
-                if (string.IsNullOrEmpty(_cache.GetString(SD.GUID_SESSION)))
+                if (string.IsNullOrEmpty(_qrCodeTokenCache.GetString(SD.GUID_SESSION)))
                 {
                     // Double-check inside the lock
-                    if (string.IsNullOrEmpty(_cache.GetString(SD.GUID_SESSION)))
+                    if (string.IsNullOrEmpty(_qrCodeTokenCache.GetString(SD.GUID_SESSION)))
                     {
-                        _cache.SetString(SD.GUID_SESSION, GenerateNewToken());
+                        _qrCodeTokenCache.SetString(SD.GUID_SESSION, GenerateNewToken());
                     }
                 }
                 GenerateQRCode();
@@ -119,7 +122,7 @@ namespace AttendanceTrackerMicroservices.Controllers
                     // In case multiple users submitted request at the same time
                     lock (_sessionTokenLock)
                     {
-                        _cache.SetString(SD.GUID_SESSION, GenerateNewToken());
+                        _qrCodeTokenCache.SetString(SD.GUID_SESSION, GenerateNewToken());
                         GenerateQRCode();
                     }
 
@@ -184,7 +187,7 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// <summary>
         /// Validates whether the provided token is valid and matches the current session.
         /// Otherwise, the token is expired since new token is generated 
-        /// <see cref="_cache.SetString(SD.GUID_SESSION, GenerateNewToken())"/> 
+        /// <see cref="_qrCodeTokenCache.SetString(SD.GUID_SESSION, GenerateNewToken())"/> 
         /// new valid 
         /// </summary>
         /// <param name="token">The authentication token to validate.</param>
@@ -197,7 +200,7 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// </remarks>
         private bool IsTokenValid(string token)
         {
-            return (!string.IsNullOrEmpty(token)) && (_cache.GetString(SD.GUID_SESSION) == token);
+            return (!string.IsNullOrEmpty(token)) && (_qrCodeTokenCache.GetString(SD.GUID_SESSION) == token);
         }
 
         /// <summary>
@@ -215,7 +218,7 @@ namespace AttendanceTrackerMicroservices.Controllers
             string authenticationUrl = Url.Action(
                 "Authentication",
                 "QR",
-                new { token = _cache.GetString(SD.GUID_SESSION) },
+                new { token = _qrCodeTokenCache.GetString(SD.GUID_SESSION) },
                 Request.Scheme,
                 Request.Host.ToString()
             );
@@ -263,15 +266,51 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// </exception>
         private bool UserShouldCheckIn(string userId)
         {
-            Task<ResponseDTO?> responseDTO = _trackerService.ShouldUserCheckIn(userId);
+            var responseDTO = _trackerService.ShouldUserCheckInAsync(userId)
+                .GetAwaiter().GetResult();
+            // FIXME: remove try catch clause when done
+            try
+            {
+                if (responseDTO.Result == null)
+                {
+                    throw new Exception("Something went wrong, result could not be retrieved!");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.Message);
+            }
+
+            bool shouldUserCheckIn = (bool)(responseDTO.Result);
+
+            return shouldUserCheckIn;
+        }
+
+        #region API CALLS
+
+        [HttpGet]
+        public IActionResult GetUserDailyRecords(string userId)
+        {
+            var responseDTO = _trackerService.GetUserAttendanceRecordsForTodayAsync(userId);
             if (responseDTO.Result == null)
             {
                 throw new Exception("Something went wrong, result could not be retrieved!");
             }
 
-            bool shouldUserCheckIn = JsonConvert.DeserializeObject<bool>(Convert.ToString(responseDTO.Result));
+            List<DailyAttendanceRecord> userDailyAttendanceRecords = 
+                JsonConvert.DeserializeObject<List<DailyAttendanceRecord>>(
+                Convert.ToString(responseDTO.Result));
 
-            return shouldUserCheckIn;
+            var dailyRecords = userDailyAttendanceRecords.Select(a => new DailyAttendanceRecordVM
+            {
+                CheckIn = a.CheckIn.ToString("HH:mm tt"),
+                CheckOut = a.CheckOut.ToString("HH:mm tt"),
+                UserId = a.UserId,
+            });
+
+            return Json(new { data = dailyRecords });
         }
+
+        #endregion
     }
 }

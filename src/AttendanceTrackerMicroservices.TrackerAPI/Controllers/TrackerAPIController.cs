@@ -22,16 +22,19 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
         }
 
         [HttpGet("should-user-check-in/{id}")]
-        public async Task<bool> ShouldUserCheckIn(string? id)
+        public async Task<IActionResult> ShouldUserCheckIn(string? id)
         {
-            Task<List<DailyAttendanceRecord>> dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecords(id);
+            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecords(id);
             List<DailyAttendanceRecord> dailyAttendanceRecords =  await dailyAttendanceRecordsTask;
+
+            _response.IsSuccess = true;
+            _response.Result = true;
 
             // User have yet to check in for the day. So returning
             // true here to indicate first check in of the day.
             if (dailyAttendanceRecords.IsNullOrEmpty())
             {
-                return true;
+                return Ok(_response);
             }
 
             // When enter here, it means the user has already checked in today
@@ -42,16 +45,21 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
                 {
                     // Invalid check out record indicating that there is a pending check out
                     // So abort the check-in process
-                    return true;
+                    _response.Result = false;
+                    return Ok(_response);
                 }
             }
-            return false;
+
+            return Ok(_response);
         }
 
-        [HttpGet("get-all-records/{id}")]
-        public async Task<IActionResult> GetAllAttendanceRecords(string? id)
+        [HttpGet("get-today-attendance-records/{id}")]
+        public async Task<IActionResult> GetTodayAttendanceRecords(string? id)
         {
-            throw new Exception();
+            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecords(id);
+            List<DailyAttendanceRecord> dailyAttendanceRecords =  await dailyAttendanceRecordsTask;
+
+            return Ok(dailyAttendanceRecords);
         }
     }
 }
