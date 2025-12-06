@@ -4,6 +4,7 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Service.IService
 {
     public interface ITrackerService
     {
-        Task<List<DailyAttendanceRecord>> GetDailyAttendanceRecords(string userId);
+        Task<List<DailyAttendanceRecord>> GetDailyAttendanceRecordsAsync(string userId);
+        Task<string> AddNewDailyAttendanceRecordAsync(DailyAttendanceRecord record);
     }
 }

@@ -9,6 +9,7 @@ namespace AttendanceTrackerMicroservices.Models
     /// </summary>
     public class DailyAttendanceRecord
     {
+        [Required]
         public string Id { get; set; }
 
         public DateTime CheckIn { get; set; }
