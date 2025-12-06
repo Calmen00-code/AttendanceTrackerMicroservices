@@ -1,4 +1,6 @@
-﻿namespace AttendanceTrackerMicroservices.Models.ViewModels
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace AttendanceTrackerMicroservices.Models.ViewModels
 {
     public class DailyAttendanceRecordVM
     {

@@ -24,7 +24,7 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
         [HttpGet("should-user-check-in/{id}")]
         public async Task<IActionResult> ShouldUserCheckIn(string? id)
         {
-            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecords(id);
+            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecordsAsync(id);
             List<DailyAttendanceRecord> dailyAttendanceRecords =  await dailyAttendanceRecordsTask;
 
             _response.IsSuccess = true;
@@ -56,10 +56,24 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
         [HttpGet("get-today-attendance-records/{id}")]
         public async Task<IActionResult> GetTodayAttendanceRecords(string? id)
         {
-            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecords(id);
+            var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecordsAsync(id);
             List<DailyAttendanceRecord> dailyAttendanceRecords =  await dailyAttendanceRecordsTask;
 
             return Ok(dailyAttendanceRecords);
+        }
+
+        [HttpPost("add-new-daily-attendance")]
+        public async Task<IActionResult> Add([FromBody] DailyAttendanceRecord record)
+        {
+            string result = await _trackerService.AddNewDailyAttendanceRecordAsync(record);
+            if (!result.IsNullOrEmpty())
+            {
+                _response.IsSuccess = false;
+                _response.Message = result;
+
+                return BadRequest(_response);
+            }
+            return Ok(_response);
         }
     }
 }

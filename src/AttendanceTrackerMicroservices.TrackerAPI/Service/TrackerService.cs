@@ -15,11 +15,25 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Service
             _db = db;
         }
 
-        public async Task<List<DailyAttendanceRecord>> GetDailyAttendanceRecords(string userId)
+        public async Task<List<DailyAttendanceRecord>> GetDailyAttendanceRecordsAsync(string userId)
         {
             return await _db.DailyAttendanceRecords
                 .Where(u => u.UserId.ToLower() == userId && u.CheckIn.Date == DateTime.Today)
                 .ToListAsync();
+        }
+
+        public async Task<string> AddNewDailyAttendanceRecordAsync(DailyAttendanceRecord record)
+        {
+            try
+            {
+                await _db.DailyAttendanceRecords.AddAsync(record);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+            return string.Empty;
         }
     }
 }

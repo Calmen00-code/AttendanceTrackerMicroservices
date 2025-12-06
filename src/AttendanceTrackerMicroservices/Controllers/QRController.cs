@@ -171,7 +171,7 @@ namespace AttendanceTrackerMicroservices.Controllers
                 {
                     Token = TempData["Token"] as string,
                     IsCheckIn = UserShouldCheckIn(userDTO?.ID),
-                    Id = userDTO?.ID
+                    UserId = userDTO?.ID
                 };
                 return View(model);
             }
@@ -179,6 +179,24 @@ namespace AttendanceTrackerMicroservices.Controllers
             {
                 TempData["error"] = ex.Message;
             }
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult RecordAttendance(AuthenticationVM model)
+        {
+            if (!RecordUserAttendance(model))
+            {
+                string errorMessage = 
+                    "An error occurred while recording your attendance. Please try again later.";
+                return UnauthorizedAction(errorMessage);
+            }
+
+            return RedirectToAction("OnSuccessRecord", "QR");
+        }
+
+        public IActionResult OnSuccessRecord()
+        {
             return View();
         }
 
@@ -285,6 +303,95 @@ namespace AttendanceTrackerMicroservices.Controllers
 
             return shouldUserCheckIn;
         }
+
+        /// <summary>
+        /// Records user attendance by handling check-in and check-out logic.
+        /// </summary>
+        /// <remarks>
+        /// This function verifies whether the user is attempting a check-in or a check-out.
+        /// </remarks>
+        /// <param name="model">AuthenticationVM model containing attendance details.</param>
+        /// <returns>Returns <c>true</c> if success, <c>false</c> otherwise.</returns>
+        private bool RecordUserAttendance(AuthenticationVM model)
+        {
+            DateTime currDateTime = DateTime.Now;
+            DateTime adjustedDateTime = new DateTime(currDateTime.Year, currDateTime.Month, currDateTime.Day,
+                                                     currDateTime.Hour, currDateTime.Minute, 0);
+
+            if (model.IsCheckIn)
+            {
+                // Check in
+                try
+                {
+                    DailyAttendanceRecord newRecord = new DailyAttendanceRecord()
+                    {
+                        Id = adjustedDateTime.ToString("yyyy-MM-dd") + "_" +
+                             adjustedDateTime.ToString("HH:mm") + "_" + model.UserId,
+                        CheckIn = adjustedDateTime,
+                        CheckOut = DateTime.MinValue,
+                        UserId = model.UserId
+                    };
+
+                    _trackerService.AddNewDailyAttendanceAsync(newRecord);
+
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("Error while checking in for user {UserId} at {DateTime}",
+                        model.UserId, adjustedDateTime);
+                    return false;
+                }
+            }
+            else
+            {
+                //// Check out
+                //DailyAttendanceRecord recordToCheckout = FindCheckoutRecord(model.UserId, adjustedDateTime.Date);
+
+                //// No pending check-out record found, something went wrong
+                //if (recordToCheckout == null)
+                //{
+                //    System.Diagnostics.Debug.WriteLine(
+                //        "No pending check-out record found for user {UserId} at {DateTime}", model.UserId, adjustedDateTime);
+                //    throw new InvalidOperationException("No pending check-out record found. But user already check-in.");
+                //}
+
+                //try
+                //{
+                //    recordToCheckout.CheckOut = adjustedDateTime;
+
+                //    _unitOfWork.DailyAttendanceRecord.Update(recordToCheckout);
+                //    _unitOfWork.Save();
+                //}
+                //catch (Exception ex)
+                //{
+                //    _logger.LogError(ex, "Error while checking out for user {UserId} at {DateTime}", model.EmployeeId, adjustedDateTime);
+                //    return false;
+                //}
+            }
+
+            // successfully recorded
+            return true;
+        }
+
+        /// <summary>
+        /// Finds the record that should be checked out for a specific employee on current date.
+        /// </summary>
+        /// <remarks>
+        /// This method retrieves the daily attendance record of an employee that should be updated
+        /// for check-out process. The record will have user who has checked in 
+        /// but has not checked out yet on the current date.
+        /// </remarks>
+        /// <param name="employeeId">The unique identifier of the employee.</param>
+        /// <param name="currDateTime">The current date-time used to filter records.</param>
+        /// <returns>The attendance record of the employee if found; otherwise, <c>null</c>.</returns>
+        //private DailyAttendanceRecord FindCheckoutRecord(string userId, DateTime currDateTime)
+        //{
+        //    var userAttendanceRecord = _unitOfWork.DailyAttendanceRecord.Get(
+        //        filter: a => (a.EmployeeId == employeeId) && (a.CheckIn.Date == currDateTime.Date) && (a.CheckOut == DateTime.MinValue),
+        //        includeProperties: "Employee");
+
+        //    return userAttendanceRecord;
+        //}
 
         #region API CALLS
 

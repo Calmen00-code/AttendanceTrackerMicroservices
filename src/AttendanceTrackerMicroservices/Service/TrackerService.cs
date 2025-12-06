@@ -36,5 +36,17 @@ namespace AttendanceTrackerMicroservices.Service
 
             return await _baseService.SendAsync(requestDTO);
         }
+
+        public async Task<ResponseDTO?> AddNewDailyAttendanceAsync(DailyAttendanceRecord record)
+        {
+            RequestDTO requestDTO = new RequestDTO()
+            {
+                ApiType = ApiType.POST,
+                Data = record,
+                Url = $"{TrackerAPIBase}/api/tracker/add-new-daily-attendance"
+            };
+
+            return await _baseService.SendAsync(requestDTO);
+        }
     }
 }
