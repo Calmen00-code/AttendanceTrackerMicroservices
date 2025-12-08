@@ -185,10 +185,10 @@ namespace AttendanceTrackerMicroservices.Controllers
         [HttpPost]
         public IActionResult RecordAttendance(AuthenticationVM model)
         {
-            if (!RecordUserAttendance(model))
+            string errorMessage = RecordUserAttendance(model);
+
+            if (!string.IsNullOrEmpty(errorMessage))
             {
-                string errorMessage = 
-                    "An error occurred while recording your attendance. Please try again later.";
                 return UnauthorizedAction(errorMessage);
             }
 
@@ -284,19 +284,12 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// </exception>
         private bool UserShouldCheckIn(string userId)
         {
-            var responseDTO = _trackerService.ShouldUserCheckInAsync(userId)
-                .GetAwaiter().GetResult();
-            // FIXME: remove try catch clause when done
-            try
+            ResponseDTO? responseDTO = 
+                _trackerService.ShouldUserCheckInAsync(userId).GetAwaiter().GetResult();
+
+            if (responseDTO == null || responseDTO.Result == null)
             {
-                if (responseDTO.Result == null)
-                {
-                    throw new Exception("Something went wrong, result could not be retrieved!");
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
+                throw new Exception("Something went wrong, result could not be retrieved!");
             }
 
             bool shouldUserCheckIn = (bool)(responseDTO.Result);
@@ -311,9 +304,10 @@ namespace AttendanceTrackerMicroservices.Controllers
         /// This function verifies whether the user is attempting a check-in or a check-out.
         /// </remarks>
         /// <param name="model">AuthenticationVM model containing attendance details.</param>
-        /// <returns>Returns <c>true</c> if success, <c>false</c> otherwise.</returns>
-        private bool RecordUserAttendance(AuthenticationVM model)
+        /// <returns>Returns empty string if success, error message otherwise.</returns>
+        private string RecordUserAttendance(AuthenticationVM model)
         {
+            ResponseDTO? result = null;
             DateTime currDateTime = DateTime.Now;
             DateTime adjustedDateTime = new DateTime(currDateTime.Year, currDateTime.Month, currDateTime.Day,
                                                      currDateTime.Hour, currDateTime.Minute, 0);
@@ -321,77 +315,38 @@ namespace AttendanceTrackerMicroservices.Controllers
             if (model.IsCheckIn)
             {
                 // Check in
-                try
+                DailyAttendanceRecordDTO checkInRecord = new DailyAttendanceRecordDTO()
                 {
-                    DailyAttendanceRecord newRecord = new DailyAttendanceRecord()
-                    {
-                        Id = adjustedDateTime.ToString("yyyy-MM-dd") + "_" +
-                             adjustedDateTime.ToString("HH:mm") + "_" + model.UserId,
-                        CheckIn = adjustedDateTime,
-                        CheckOut = DateTime.MinValue,
-                        UserId = model.UserId
-                    };
+                    CheckIn = adjustedDateTime,
+                    UserId = model.UserId
+                };
 
-                    _trackerService.AddNewDailyAttendanceAsync(newRecord);
-
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine("Error while checking in for user {UserId} at {DateTime}",
-                        model.UserId, adjustedDateTime);
-                    return false;
-                }
+                result = _trackerService.PerformCheckIn(checkInRecord).GetAwaiter().GetResult();
             }
             else
             {
-                //// Check out
-                //DailyAttendanceRecord recordToCheckout = FindCheckoutRecord(model.UserId, adjustedDateTime.Date);
-
-                //// No pending check-out record found, something went wrong
-                //if (recordToCheckout == null)
-                //{
-                //    System.Diagnostics.Debug.WriteLine(
-                //        "No pending check-out record found for user {UserId} at {DateTime}", model.UserId, adjustedDateTime);
-                //    throw new InvalidOperationException("No pending check-out record found. But user already check-in.");
-                //}
-
-                //try
-                //{
-                //    recordToCheckout.CheckOut = adjustedDateTime;
-
-                //    _unitOfWork.DailyAttendanceRecord.Update(recordToCheckout);
-                //    _unitOfWork.Save();
-                //}
-                //catch (Exception ex)
-                //{
-                //    _logger.LogError(ex, "Error while checking out for user {UserId} at {DateTime}", model.EmployeeId, adjustedDateTime);
-                //    return false;
-                //}
+                // Check out
+                DailyAttendanceRecordDTO checkOutRecord = new DailyAttendanceRecordDTO()
+                {
+                    CheckOut = adjustedDateTime,
+                    UserId = model.UserId
+                };
+                result = _trackerService.PerformCheckOut(checkOutRecord).GetAwaiter().GetResult();
             }
 
-            // successfully recorded
-            return true;
+            // Unsuccess request to check-in OR check-out
+            if (result == null)
+            {
+                return "No response returned from server";
+            }
+            
+            if (!result.IsSuccess)
+            {
+                return result.Message;
+            }
+
+            return string.Empty;
         }
-
-        /// <summary>
-        /// Finds the record that should be checked out for a specific employee on current date.
-        /// </summary>
-        /// <remarks>
-        /// This method retrieves the daily attendance record of an employee that should be updated
-        /// for check-out process. The record will have user who has checked in 
-        /// but has not checked out yet on the current date.
-        /// </remarks>
-        /// <param name="employeeId">The unique identifier of the employee.</param>
-        /// <param name="currDateTime">The current date-time used to filter records.</param>
-        /// <returns>The attendance record of the employee if found; otherwise, <c>null</c>.</returns>
-        //private DailyAttendanceRecord FindCheckoutRecord(string userId, DateTime currDateTime)
-        //{
-        //    var userAttendanceRecord = _unitOfWork.DailyAttendanceRecord.Get(
-        //        filter: a => (a.EmployeeId == employeeId) && (a.CheckIn.Date == currDateTime.Date) && (a.CheckOut == DateTime.MinValue),
-        //        includeProperties: "Employee");
-
-        //    return userAttendanceRecord;
-        //}
 
         #region API CALLS
 
@@ -404,8 +359,8 @@ namespace AttendanceTrackerMicroservices.Controllers
                 throw new Exception("Something went wrong, result could not be retrieved!");
             }
 
-            List<DailyAttendanceRecord> userDailyAttendanceRecords = 
-                JsonConvert.DeserializeObject<List<DailyAttendanceRecord>>(
+            List<DailyAttendanceRecordDTO> userDailyAttendanceRecords = 
+                JsonConvert.DeserializeObject<List<DailyAttendanceRecordDTO>>(
                 Convert.ToString(responseDTO.Result));
 
             var dailyRecords = userDailyAttendanceRecords.Select(a => new DailyAttendanceRecordVM

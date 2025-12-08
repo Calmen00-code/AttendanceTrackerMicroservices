@@ -59,20 +59,68 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Controllers
             var dailyAttendanceRecordsTask = _trackerService.GetDailyAttendanceRecordsAsync(id);
             List<DailyAttendanceRecord> dailyAttendanceRecords =  await dailyAttendanceRecordsTask;
 
+            // Mapping to DTO list
+            List<DailyAttendanceRecordDTO> dailyAttendanceRecordsDTOList =
+                dailyAttendanceRecords.Select(record => new DailyAttendanceRecordDTO()
+                {
+                    Id = record.Id,
+                    CheckIn = record.CheckIn,
+                    CheckOut = record.CheckOut,
+                    UserId = record.UserId,
+                }).ToList();
+
             return Ok(dailyAttendanceRecords);
         }
 
-        [HttpPost("add-new-daily-attendance")]
-        public async Task<IActionResult> Add([FromBody] DailyAttendanceRecord record)
+        [HttpPost("check-in")]
+        public async Task<IActionResult> PerformCheckIn([FromBody] DailyAttendanceRecordDTO record)
         {
-            string result = await _trackerService.AddNewDailyAttendanceRecordAsync(record);
-            if (!result.IsNullOrEmpty())
+            DailyAttendanceRecord dbCheckInRecord = new DailyAttendanceRecord()
+            {
+                Id = record.CheckIn.ToString("yyyy-MM-dd") + "_" +
+                     record.CheckIn.ToString("HH:mm") + "_" + record.UserId,
+                CheckIn = record.CheckIn,
+                UserId = record.UserId
+            };
+
+            string errorMessage = await _trackerService.CheckInAsync(dbCheckInRecord);
+            if (!errorMessage.IsNullOrEmpty())
             {
                 _response.IsSuccess = false;
-                _response.Message = result;
+                _response.Message = errorMessage;
 
                 return BadRequest(_response);
             }
+
+            return Ok(_response);
+        }
+
+        [HttpPost("check-out")]
+        public async Task<IActionResult> PerformCheckOut([FromBody] DailyAttendanceRecordDTO record)
+        {
+            // Get the correct dbCheckoutRecord that has VALID Id to perform checkout
+            DailyAttendanceRecord? dbCheckoutRecord =
+                _trackerService.FindCheckOutRecordFromRequest(record).GetAwaiter().GetResult();
+
+            if (dbCheckoutRecord == null)
+            {
+                _response.IsSuccess = false;
+                _response.Message = "Unable to find checkout record";
+                return BadRequest(_response);
+            }
+
+            // Now that we get the correct entry for checkout, update the checkout value
+            dbCheckoutRecord.CheckOut = record.CheckOut;
+
+            string errorMessage = await _trackerService.CheckOutAsync(dbCheckoutRecord);
+            if (!errorMessage.IsNullOrEmpty())
+            {
+                _response.IsSuccess = false;
+                _response.Message = errorMessage;
+
+                return BadRequest(_response);
+            }
+
             return Ok(_response);
         }
     }

@@ -8,9 +8,8 @@ namespace AttendanceTrackerMicroservices.TrackerAPI.Models
     /// Represents a daily attendance record for an user,
     /// including check-in and check-out times on a specific single day.
     /// </summary>
-    public class DailyAttendanceRecord
+    public class DailyAttendanceRecordDTO
     {
-        [Key]
         public string Id { get; set; }
 
         public DateTime CheckIn { get; set; } = DateTime.MinValue;
