@@ -6,6 +6,7 @@ namespace AttendanceTrackerMicroservices.Service.IService
     {
         Task<ResponseDTO?> ShouldUserCheckInAsync(string userId);
         Task<ResponseDTO?> GetUserAttendanceRecordsForTodayAsync(string userId);
-        Task<ResponseDTO?> AddNewDailyAttendanceAsync(DailyAttendanceRecord record);
+        Task<ResponseDTO?> PerformCheckIn(DailyAttendanceRecordDTO record);
+        Task<ResponseDTO?> PerformCheckOut(DailyAttendanceRecordDTO record);
     }
 }
